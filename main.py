@@ -11,8 +11,13 @@ response = client.models.generate_content(
     contents="Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum."
 ) # generate content using the model
 
+prompt_tokens = response.usage_metadata.prompt_token_count # get the number of prompt tokens used
+response_tokens = response.usage_metadata.candidates_token_count # get the number of response tokens used
+
 def main(): # main function to print the response
     print(response.text) # print the generated content to the console
+    print(f"Prompt tokens: {prompt_tokens}") # print the number of prompt tokens
+    print(f"Response tokens: {response_tokens}") # print the number of response tokens
 
 
 if __name__ == "__main__": # run the main function if this file is executed directly
