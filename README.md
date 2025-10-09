@@ -1,0 +1,1 @@
+This is a boot.dev AI Agent Python project. It is designed to demonstrate how to create an AI agent using Python.
