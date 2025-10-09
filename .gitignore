@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# passwords, api keys, and other sensitive information
+.env
