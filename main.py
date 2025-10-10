@@ -9,13 +9,13 @@ client = genai.Client(api_key=api_key) # create a client object with the API key
 from google.genai import types
 
 import sys # to access command line arguments
-prompt = sys.argv[1] if len(sys.argv) > 1 else None
-if prompt is None:
+user_prompt = sys.argv[1] if len(sys.argv) > 1 else None
+if user_prompt is None:
     print("Error: No prompt provided. Please provide a prompt as a command-line argument.")
     sys.exit(1)
 
 messages = [
-    types.Content(role="user", parts=[types.Part(text=prompt)]),
+    types.Content(role="user", parts=[types.Part(text=user_prompt)]),
 ]
 
 response = client.models.generate_content(
@@ -29,8 +29,10 @@ response_tokens = response.usage_metadata.candidates_token_count # get the numbe
 
 def main(): # main function to print the response
     print(response.text) # print the generated content to the console
-    print(f"Prompt tokens: {prompt_tokens}") # print the number of prompt tokens
-    print(f"Response tokens: {response_tokens}") # print the number of response tokens
+    if "--verbose" in sys.argv:
+        print(f"User prompt: {user_prompt}") # print the user prompt
+        print(f"Prompt tokens: {prompt_tokens}") # print the number of prompt tokens
+        print(f"Response tokens: {response_tokens}") # print the number of response tokens
 
 
 if __name__ == "__main__": # run the main function if this file is executed directly
