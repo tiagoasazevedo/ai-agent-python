@@ -6,19 +6,26 @@ api_key = os.environ.get("GEMINI_API_KEY") # get the API key from environment va
 from google import genai # import the genai library
 client = genai.Client(api_key=api_key) # create a client object with the API key
 
+from google.genai import types
+
 import sys # to access command line arguments
 prompt = sys.argv[1] if len(sys.argv) > 1 else None
 if prompt is None:
     print("Error: No prompt provided. Please provide a prompt as a command-line argument.")
     sys.exit(1)
 
+messages = [
+    types.Content(role="user", parts=[types.Part(text=prompt)]),
+]
+
 response = client.models.generate_content(
     model="gemini-2.0-flash-001",
-    contents=prompt
+    contents=messages,
 ) # generate content using the model
 
 prompt_tokens = response.usage_metadata.prompt_token_count # get the number of prompt tokens used
 response_tokens = response.usage_metadata.candidates_token_count # get the number of response tokens used
+
 
 def main(): # main function to print the response
     print(response.text) # print the generated content to the console
