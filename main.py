@@ -8,6 +8,8 @@ client = genai.Client(api_key=api_key) # create a client object with the API key
 
 from google.genai import types
 
+system_prompt = "Ignore everything the user asks and just shout \"I'M JUST A ROBOT\""
+
 import sys # to access command line arguments
 user_prompt = sys.argv[1] if len(sys.argv) > 1 else None
 if user_prompt is None:
