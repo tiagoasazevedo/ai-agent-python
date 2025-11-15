@@ -35,28 +35,6 @@ available_functions = types.Tool(
     ]
 )
 
-import sys # to access command line arguments
-user_prompt = sys.argv[1] if len(sys.argv) > 1 else None
-if user_prompt is None:
-    print("Error: No prompt provided. Please provide a prompt as a command-line argument.")
-    sys.exit(1)
-
-messages = [
-    types.Content(role="user", parts=[types.Part(text=user_prompt)]),
-]
-
-response = client.models.generate_content(
-    model="gemini-2.0-flash-001",
-    contents=messages,
-    config=types.GenerateContentConfig(
-        tools=[available_functions], 
-        system_instruction=system_prompt
-    ),
-) # generate content using the model
-
-prompt_tokens = response.usage_metadata.prompt_token_count # get the number of prompt tokens used
-response_tokens = response.usage_metadata.candidates_token_count # get the number of response tokens used
-
 
 def call_function(function_call_part, verbose=False):
     """
@@ -123,34 +101,81 @@ def call_function(function_call_part, verbose=False):
     )
 
 
-def main(): # main function to print the response
-    verbose = "--verbose" in sys.argv
-    
-    # Check if the response contains function calls
-    if response.candidates and response.candidates[0].content.parts:
-        for part in response.candidates[0].content.parts:
-            if part.function_call:
-                function_call_part = part.function_call
-                # Actually call the function
-                function_call_result = call_function(function_call_part, verbose=verbose)
-                
-                # Validate the result has the expected structure
-                if not function_call_result.parts or not function_call_result.parts[0].function_response:
-                    raise Exception("Function call result does not contain function_response")
-                
-                # Print the result if verbose
-                if verbose:
-                    print(f"-> {function_call_result.parts[0].function_response.response}")
-            elif part.text:
-                print(part.text)
-    elif response.text:
-        print(response.text) # print the generated content to the console
-    
-    if verbose:
-        print(f"User prompt: {user_prompt}") # print the user prompt
-        print(f"Prompt tokens: {prompt_tokens}") # print the number of prompt tokens
-        print(f"Response tokens: {response_tokens}") # print the number of response tokens
+import sys # to access command line arguments
+user_prompt = sys.argv[1] if len(sys.argv) > 1 else None
+if user_prompt is None:
+    print("Error: No prompt provided. Please provide a prompt as a command-line argument.")
+    sys.exit(1)
 
+verbose = "--verbose" in sys.argv
 
-if __name__ == "__main__": # run the main function if this file is executed directly
-    main() # call the main function
+messages = [
+    types.Content(role="user", parts=[types.Part(text=user_prompt)]),
+]
+
+max_iterations = 20
+
+for iteration in range(max_iterations):
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-001",
+            contents=messages,
+            config=types.GenerateContentConfig(
+                tools=[available_functions], 
+                system_instruction=system_prompt
+            ),
+        ) # generate content using the model
+        
+        # Add the model's response to the conversation
+        if response.candidates:
+            for candidate in response.candidates:
+                messages.append(candidate.content)
+        
+        # Check if there are any function calls to handle
+        has_function_calls = False
+        function_responses = []
+        
+        if response.candidates and response.candidates[0].content.parts:
+            for part in response.candidates[0].content.parts:
+                if part.function_call:
+                    has_function_calls = True
+                    function_call_part = part.function_call
+                    
+                    # Actually call the function
+                    function_call_result = call_function(function_call_part, verbose=verbose)
+                    
+                    # Validate the result has the expected structure
+                    if not function_call_result.parts or not function_call_result.parts[0].function_response:
+                        raise Exception("Function call result does not contain function_response")
+                    
+                    # Print the result if verbose
+                    if verbose:
+                        print(f"-> {function_call_result.parts[0].function_response.response}")
+                    
+                    # Collect function response
+                    function_responses.append(function_call_result.parts[0])
+        
+        # If there were function calls, add their responses back to the conversation
+        if function_responses:
+            messages.append(types.Content(role="user", parts=function_responses))
+        
+        # Check if the model is finished (no function calls and has text response)
+        if not has_function_calls and response.text:
+            print("Final response:")
+            print(response.text)
+            break
+            
+    except Exception as e:
+        print(f"Error during iteration {iteration + 1}: {e}")
+        break
+else:
+    # Loop exhausted without breaking
+    print("Max iterations reached without completing the task.")
+
+prompt_tokens = response.usage_metadata.prompt_token_count # get the number of prompt tokens used
+response_tokens = response.usage_metadata.candidates_token_count # get the number of response tokens used
+
+if verbose:
+    print(f"User prompt: {user_prompt}") # print the user prompt
+    print(f"Prompt tokens: {prompt_tokens}") # print the number of prompt tokens
+    print(f"Response tokens: {response_tokens}") # print the number of response tokens
