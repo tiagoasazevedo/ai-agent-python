@@ -60,3 +60,25 @@ def run_python_file(working_directory, file_path, args=[]):
         return "Error: executing Python file: Process timed out after 30 seconds"
     except Exception as e:
         return f"Error: executing Python file: {e}"
+
+from google.genai import types
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Execute a Python file within the working directory with optional command-line arguments.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the Python file to execute, relative to the working directory.",
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                description="Optional list of command-line arguments to pass to the Python script.",
+                items=types.Schema(type=types.Type.STRING),
+            ),
+        },
+        required=["file_path"],
+    ),
+)
